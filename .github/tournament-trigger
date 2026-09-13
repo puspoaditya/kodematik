@@ -1,1 +1,2 @@
-run=v0.6.17-candidate-manifest-generation
+run=v0.6.17-exact-replay
+candidate_manifest_path=benchmarks/axios/candidate-manifests/run7-failure-localized.json
