@@ -15,6 +15,9 @@ on:
         description: Maximum candidate commits to scan
         required: true
         default: '50'
+  push:
+    paths:
+      - .github/qualification-trigger
 
 permissions:
   contents: read
@@ -24,15 +27,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      TARGET_REPO: ${{ inputs.target_repo }}
-      TASKS: ${{ inputs.tasks }}
-      SCAN_LIMIT: ${{ inputs.scan_limit }}
+      TARGET_REPO: ${{ inputs.target_repo || 'sindresorhus/p-map' }}
+      TASKS: ${{ inputs.tasks || '5' }}
+      SCAN_LIMIT: ${{ inputs.scan_limit || '50' }}
 
     steps:
       - name: Checkout Kodematik
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Resolve push qualification inputs
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(sed -n 's/^target_repo=//p' .github/qualification-trigger | tail -n1)"
+          tasks="$(sed -n 's/^tasks=//p' .github/qualification-trigger | tail -n1)"
+          scan="$(sed -n 's/^scan_limit=//p' .github/qualification-trigger | tail -n1)"
+          [ -n "$target" ] && echo "TARGET_REPO=$target" >> "$GITHUB_ENV"
+          [ -n "$tasks" ] && echo "TASKS=$tasks" >> "$GITHUB_ENV"
+          [ -n "$scan" ] && echo "SCAN_LIMIT=$scan" >> "$GITHUB_ENV"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
