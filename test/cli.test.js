@@ -4,9 +4,9 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 const root=dirname(dirname(fileURLToPath(import.meta.url)));
-test('help exposes Kodematik v0.6.16 instruction delivery integrity',()=>{
+test('help exposes Kodematik v0.6.17 candidate replay integrity',()=>{
   const out=execFileSync(process.execPath,[join(root,'src','cli.js'),'help'],{encoding:'utf8'});
-  assert.match(out,/Kodematik v0\.6\.16/);
+  assert.match(out,/Kodematik v0\.6\.17/);
   assert.match(out,/kodematik qualify/);
   assert.match(out,/kodematik baseline/);
   assert.match(out,/kodematik evolve/);
@@ -22,13 +22,12 @@ test('help exposes Kodematik v0.6.16 instruction delivery integrity',()=>{
   assert.match(out,/--candidates N/);
   assert.match(out,/--trials N/);
   assert.match(out,/--max-turns N/);
-  assert.match(out,/Instruction Delivery Integrity/);
-  assert.match(out,/AGENTS\.md into the actual system context/);
-  assert.match(out,/fingerprints the exact delivered instructions/);
-  assert.match(out,/task-specific and frozen/);
+  assert.match(out,/Candidate Replay Integrity/);
+  assert.match(out,/fingerprinted manifests/);
+  assert.match(out,/replayed exactly across independent tournaments/);
+  assert.match(out,/fails closed on target, dataset, schema, task coverage/);
   assert.match(out,/majority training wins/);
   assert.match(out,/zero held-out regressions/);
-  assert.match(out,/Fingerprint-locked qualification/);
-  assert.match(out,/instruction-delivery evidence/);
+  assert.match(out,/does not guarantee deterministic agent performance/);
   assert.match(out,/--install/);
 });
