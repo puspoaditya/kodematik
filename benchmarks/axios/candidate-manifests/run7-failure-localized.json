@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "targetRepo": "axios/axios",
+  "datasetFingerprint": "502f5bf177246c5900e98bc56812d0f731fa9452940d612af6ac2d1be577fa42",
+  "mutation": {
+    "id": "failure-localized",
+    "title": "Failure-localized repair"
+  },
+  "tasks": {
+    "2d2a21af8a43": [
+      "Make the smallest correct production change for the observed regression.",
+      "Preserve all existing tests and staged regression oracles.",
+      "Do not edit generated, vendor, lock, or build-output files unless the task explicitly requires it.",
+      "Treat the staged regression oracle as the specification. Read these files before editing production code: tests/unit/core/InterceptorManager.test.js.",
+      "Use the narrow locked verification first and again after the patch: `npm run lint` ; `npm run test:vitest:unit -- tests/unit/core/InterceptorManager.test.js`.",
+      "The baseline produced no production-code edit. After diagnosis, make the smallest source change that explains the failing oracle instead of stopping at analysis.",
+      "The baseline exhausted its tool-call budget. Spend at most two early turns locating the failing path, edit by the middle of the run, and keep the final turns for the locked verification. Avoid broad test suites and unrelated browsing.",
+      "The baseline still failed test verification. Trace the first remaining failing check to the production branch that controls that behavior before changing unrelated code.",
+      "Follow the failing assertion backward to the nearest production function and patch that path only; avoid repository-wide refactors."
+    ],
+    "712e02373f1c": [
+      "Make the smallest correct production change for the observed regression.",
+      "Preserve all existing tests and staged regression oracles.",
+      "Do not edit generated, vendor, lock, or build-output files unless the task explicitly requires it.",
+      "Treat the staged regression oracle as the specification. Read these files before editing production code: tests/browser/adapter.browser.test.js, tests/browser/interceptors.browser.test.js, tests/unit/core/InterceptorManager.test.js.",
+      "Use the narrow locked verification first and again after the patch: `npm run lint` ; `npm run test:vitest:unit -- tests/browser/adapter.browser.test.js tests/browser/interceptors.browser.test.js tests/unit/core/InterceptorManager.test.js`.",
+      "The baseline agent did not read the regression oracle. Do not infer behavior from the task title alone; inspect the failing assertions and inputs first.",
+      "The baseline agent did not run the locked targeted verification. Reproduce the failure before broad exploration and reserve time to rerun the same check after editing.",
+      "The baseline produced no production-code edit. After diagnosis, make the smallest source change that explains the failing oracle instead of stopping at analysis.",
+      "The baseline exhausted its tool-call budget. Spend at most two early turns locating the failing path, edit by the middle of the run, and keep the final turns for the locked verification. Avoid broad test suites and unrelated browsing.",
+      "The baseline still failed test verification. Trace the first remaining failing check to the production branch that controls that behavior before changing unrelated code.",
+      "Follow the failing assertion backward to the nearest production function and patch that path only; avoid repository-wide refactors."
+    ],
+    "a75bf44647e5": [
+      "Make the smallest correct production change for the observed regression.",
+      "Preserve all existing tests and staged regression oracles.",
+      "Do not edit generated, vendor, lock, or build-output files unless the task explicitly requires it.",
+      "Treat the staged regression oracle as the specification. Read these files before editing production code: tests/unit/core/Axios.test.js.",
+      "Use the narrow locked verification first and again after the patch: `npm run lint` ; `npm run test:vitest:unit -- tests/unit/core/Axios.test.js`.",
+      "The baseline produced no production-code edit. After diagnosis, make the smallest source change that explains the failing oracle instead of stopping at analysis.",
+      "The baseline exhausted its tool-call budget. Spend at most two early turns locating the failing path, edit by the middle of the run, and keep the final turns for the locked verification. Avoid broad test suites and unrelated browsing.",
+      "The baseline still failed test verification. Trace the first remaining failing check to the production branch that controls that behavior before changing unrelated code.",
+      "Follow the failing assertion backward to the nearest production function and patch that path only; avoid repository-wide refactors."
+    ],
+    "c3f553c740eb": [
+      "Make the smallest correct production change for the observed regression.",
+      "Preserve all existing tests and staged regression oracles.",
+      "Do not edit generated, vendor, lock, or build-output files unless the task explicitly requires it.",
+      "Treat the staged regression oracle as the specification. Read these files before editing production code: tests/browser/requests.browser.test.js, tests/unit/adapters/xhr.test.js.",
+      "Use the narrow locked verification first and again after the patch: `npm run lint` ; `npm run test:vitest:unit -- tests/browser/requests.browser.test.js tests/unit/adapters/xhr.test.js`.",
+      "The baseline agent did not read the regression oracle. Do not infer behavior from the task title alone; inspect the failing assertions and inputs first.",
+      "The baseline agent did not run the locked targeted verification. Reproduce the failure before broad exploration and reserve time to rerun the same check after editing.",
+      "The baseline produced no production-code edit. After diagnosis, make the smallest source change that explains the failing oracle instead of stopping at analysis.",
+      "The baseline exhausted its tool-call budget. Spend at most two early turns locating the failing path, edit by the middle of the run, and keep the final turns for the locked verification. Avoid broad test suites and unrelated browsing.",
+      "The baseline still failed test verification. Trace the first remaining failing check to the production branch that controls that behavior before changing unrelated code.",
+      "Follow the failing assertion backward to the nearest production function and patch that path only; avoid repository-wide refactors."
+    ],
+    "d8a919fd8140": [
+      "Make the smallest correct production change for the observed regression.",
+      "Preserve all existing tests and staged regression oracles.",
+      "Do not edit generated, vendor, lock, or build-output files unless the task explicitly requires it.",
+      "Treat the staged regression oracle as the specification. Read these files before editing production code: tests/browser/progress.browser.test.js, tests/unit/helpers/progressEventReducer.test.js, tests/unit/helpers/throttle.test.js.",
+      "Use the narrow locked verification first and again after the patch: `npm run lint` ; `npm run test:vitest:unit -- tests/browser/progress.browser.test.js tests/unit/helpers/progressEventReducer.test.js tests/unit/helpers/throttle.test.js`.",
+      "The baseline agent did not read the regression oracle. Do not infer behavior from the task title alone; inspect the failing assertions and inputs first.",
+      "The baseline agent did not run the locked targeted verification. Reproduce the failure before broad exploration and reserve time to rerun the same check after editing.",
+      "The baseline produced no production-code edit. After diagnosis, make the smallest source change that explains the failing oracle instead of stopping at analysis.",
+      "The baseline exhausted its tool-call budget. Spend at most two early turns locating the failing path, edit by the middle of the run, and keep the final turns for the locked verification. Avoid broad test suites and unrelated browsing.",
+      "The baseline still failed test verification. Trace the first remaining failing check to the production branch that controls that behavior before changing unrelated code.",
+      "Follow the failing assertion backward to the nearest production function and patch that path only; avoid repository-wide refactors."
+    ]
+  },
+  "fingerprint": "c28515fc9b77ec05185c838df92cf54a4ddafef107dcd8a804ab2dceab1d3a28"
+}
