@@ -1,7 +1,7 @@
 {
   "name": "kodematik",
-  "version": "0.6.15",
-  "description": "Train coding agents with fingerprint-locked replay tasks, targeted historical test oracles, failure-informed mutations, stochastic multi-trial evidence, held-out safety gates, and reproducibility guards.",
+  "version": "0.6.16",
+  "description": "Train coding agents with fingerprint-locked replay tasks, targeted historical test oracles, failure-informed mutations, stochastic held-out evidence, and instruction-delivery integrity.",
   "type": "module",
   "bin": { "kodematik": "./src/cli.js" },
   "scripts": {
