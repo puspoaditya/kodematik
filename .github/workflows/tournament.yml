@@ -74,6 +74,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Resolve candidate replay manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          manifest="$KODEMATIK_CANDIDATE_MANIFEST_IN"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            manifest="$(sed -n 's/^candidate_manifest_path=//p' .github/tournament-trigger | tail -n 1)"
+          fi
+          if [ -n "$manifest" ]; then
+            [[ "$manifest" =~ ^[A-Za-z0-9._/-]+$ ]] || { echo 'candidate manifest path contains unsupported characters'; exit 2; }
+            [[ "$manifest" != /* ]] || { echo 'candidate manifest path must be repository-relative'; exit 2; }
+            case "/$manifest/" in *"/../"*) echo 'candidate manifest path must not traverse parent directories'; exit 2;; esac
+            [ -f "$manifest" ] || { echo "candidate manifest not found: $manifest"; exit 2; }
+            manifest="$(realpath "$manifest")"
+            echo "Exact candidate replay enabled: $manifest"
+          else
+            echo 'Candidate replay disabled; tournament will generate a new manifest.'
+          fi
+          echo "KODEMATIK_CANDIDATE_MANIFEST_IN=$manifest" >> "$GITHUB_ENV"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
