@@ -49,6 +49,21 @@ function qualificationPlanMatches(task,plan,oracleFiles){
   return q.verificationSource===plan.source&&(q.verificationJobId||null)===(plan.jobId||null)&&(q.verificationStrategy||null)===(plan.strategy||null)&&sameList(q.verificationCommands||[],plan.commands.map(x=>x.commandText||x.command.flat().join(' ')))&&sameList(q.testOracleFiles||[],oracleFiles);
 }
 
+export function evaluationEvidence(result={}){
+  const instruction=result.agent?.instructionContext||null,failedChecks=(result.after||[]).filter(check=>!check.ok).map(check=>({name:check.name||'',family:check.family||'other',status:check.status??null,targeted:!!check.targeted}));
+  return{
+    taskId:result.taskId||'unknown',variant:result.variant||'unknown',score:Number(result.score)||0,pass:!!result.pass,usable:!!result.usable,
+    failedChecks,changedFiles:[...(result.files||[])],testFilesTouched:[...(result.testFilesTouched||[])],modifiedOracleFiles:[...(result.modifiedOracleFiles||[])],
+    agentOk:!!result.agent?.ok,agentStatus:result.agent?.status??null,turnExhausted:/exceeded\s+\d+\s+tool-call turns/i.test(String(result.agent?.stderr||'')),
+    instructionLoaded:instruction?.loaded??null,instructionFingerprint:instruction?.sha256||null,instructionChars:instruction?.chars||0,
+  };
+}
+export function formatEvaluationEvidence(result={}){
+  const e=evaluationEvidence(result),failed=e.failedChecks.length?e.failedChecks.map(check=>`${check.name||check.family}:${check.status??'fail'}`).join(','):'none',files=e.changedFiles.length?e.changedFiles.join(','):'none',fp=e.instructionFingerprint?e.instructionFingerprint.slice(0,16):'none';
+  return `[task-evidence] ${e.taskId} variant=${e.variant} score=${e.score} pass=${e.pass?'yes':'no'} failures=${failed} files=${files} agent=${e.agentOk?'ok':'fail'}:${e.agentStatus??'none'} turns=${e.turnExhausted?'exhausted':'ok'} instructions=${e.instructionLoaded===null?'unknown':e.instructionLoaded?'loaded':'missing'}:${fp}:${e.instructionChars}`;
+}
+function emitEvaluationEvidence(result,runAgent){if(runAgent&&result?.usable)console.log(formatEvaluationEvidence(result));return result;}
+
 export function evaluateTask(repo,task,{candidate=false,mutation=null,runAgent=true,model,installDependencies=false,agentRunner=runCodexTask,maxTurns,historicalRuntime=true}={}){
   const label=mutation?.id||(candidate?'candidate':'baseline'),wt=makeWorktree(repo,label,task.parent),resolutionDate=historicalResolutionDate(repo,task.commit);
   try{
@@ -64,7 +79,7 @@ export function evaluateTask(repo,task,{candidate=false,mutation=null,runAgent=t
     const afterBaseRuntime=historicalRuntime?detectHistoricalRuntime(wt):runtime,afterRuntime=runtimeForVerificationPlan(wt,afterBaseRuntime,verificationPlan),after=verifyForRuntime(wt,afterRuntime,verificationPlan),modifiedOracleFiles=testOracleFiles.filter(file=>!oracleFileMatches(wt,task,file)),rawFiles=changedFiles(wt),oracleSet=new Set(testOracleFiles),modifiedOracleSet=new Set(modifiedOracleFiles),files=rawFiles.filter(file=>!oracleSet.has(file)||modifiedOracleSet.has(file)),score=scoreVerification(after),testFilesTouched=files.filter(f=>/(^|\/)(__tests__|tests?|specs?)(\/|\.)|\.(test|spec)\./i.test(f)),usable=true;
     const result={taskId:task.id,title:task.title,variant:mutation?.id||(candidate?'candidate':'baseline'),score,preparation,before,after,agent,files,testFilesTouched,modifiedOracleFiles,diff:gitDiff(wt),regressionDetected,testRegressionDetected,usable,pass:usable&&after.length>0&&after.every(x=>x.ok)&&modifiedOracleFiles.length===0&&testFilesTouched.length===0,runtime,runtimeSummary:runtime?runtimeSummary(runtime):'current runtime',afterRuntime,afterRuntimeSummary:afterRuntime?runtimeSummary(afterRuntime):'current runtime',...verificationMeta,dependencyResolutionMode:preparation.resolutionMode,dependencyResolutionDate:preparation.resolutionDate||resolutionDate};
     if(!mutation&&!candidate&&runAgent)rememberFailureProfile(repo,task.id,result);
-    return result;
+    return emitEvaluationEvidence(result,runAgent);
   }finally{removeWorktree(repo,wt);}
 }
 
