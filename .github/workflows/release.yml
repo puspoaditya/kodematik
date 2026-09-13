@@ -1,0 +1,64 @@
+name: Publish Release
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/release-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read release trigger
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="$(sed -n 's/^tag=//p' .github/release-trigger | head -n1)"
+          TARGET="$(sed -n 's/^target=//p' .github/release-trigger | head -n1)"
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$ ]] || { echo "Invalid release tag: $TAG"; exit 2; }
+          [[ "$TARGET" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid target SHA: $TARGET"; exit 2; }
+          git cat-file -e "$TARGET^{commit}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
+      - name: Build release notes from changelog
+        shell: bash
+        env:
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG#v}"
+          awk -v heading="## v${VERSION} " '
+            index($0, heading) == 1 { capture=1; next }
+            capture && /^## v[0-9]/ { exit }
+            capture { print }
+          ' CHANGELOG.md > release-notes.md
+          [ -s release-notes.md ] || { echo "No CHANGELOG section found for $TAG"; exit 2; }
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          TARGET: ${{ steps.release.outputs.target }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; leaving it unchanged."
+            exit 0
+          fi
+          gh release create "$TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$TARGET" \
+            --title "Kodematik $TAG — Instruction Delivery Integrity" \
+            --notes-file release-notes.md
