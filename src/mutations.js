@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { packageManager } from './core.js';
+import { createCandidateManifest, readCandidateManifest, writeCandidateManifest } from './candidate-manifest.js';
 
 function existing(cwd){const p=join(cwd,'AGENTS.md');return existsSync(p)?readFileSync(p,'utf8').trim():'';}
 function verification(info,cwd){const s=info.scripts||{},pm=packageManager(cwd),cmd=n=>pm==='npm'?`npm run ${n}`:`${pm} ${n}`,out=[];if(s.test)out.push(pm==='npm'?'npm test':`${pm} test`);if(s.typecheck)out.push(cmd('typecheck'));else if(s['type-check'])out.push(cmd('type-check'));if(s.lint)out.push(cmd('lint'));return out;}
@@ -34,12 +35,45 @@ const mutationDefinitions=[
   {id:'repo-map',title:'Repository-aware',mode:'oracle',base:['Inspect package scripts and nearby implementation/tests before editing.','Follow existing repository patterns, naming, module style, and error-handling conventions.','Change only files needed for the regression.']},
 ];
 
-function instantiate(definition){
-  const frozenByTask=new Map();
-  return{id:definition.id,title:definition.title,apply:(cwd,info,context={})=>{const taskId=context.task?.id||'unknown';let rules=frozenByTask.get(taskId);if(!rules){rules=unique([...definition.base,...failureRules(context.failureProfile||{},context,definition.mode)]);frozenByTask.set(taskId,rules);}write(cwd,definition.title,rules,info);}};
+function manifestExpected(){return{targetRepo:process.env.TARGET_REPO||null,datasetFingerprint:process.env.EXPECTED_FINGERPRINT||null};}
+function manifestOutputPath(){return process.env.KODEMATIK_CANDIDATE_MANIFEST_OUT||null;}
+
+function instantiate(definition,{manifest=null}={}){
+  const frozenByTask=new Map(Object.entries(manifest?.tasks||{}).map(([taskId,rules])=>[taskId,[...rules]]));
+  const replay=!!manifest;
+  let winnerPath=null;
+  const currentManifest=()=>createCandidateManifest({
+    ...manifestExpected(),
+    mutation:{id:definition.id,title:definition.title},
+    tasks:Object.fromEntries([...frozenByTask.entries()]),
+  });
+  const persist=()=>{if(!winnerPath)return null;const next=currentManifest(),file=writeCandidateManifest(winnerPath,next);console.log(`Candidate manifest: ${definition.id} · sha256=${next.fingerprint.slice(0,16)} · tasks=${Object.keys(next.tasks).length} · ${file}`);return next;};
+  return{
+    id:definition.id,
+    title:replay?`${definition.title} [manifest replay]`:definition.title,
+    replay,
+    apply:(cwd,info,context={})=>{
+      const taskId=context.task?.id||'unknown';let rules=frozenByTask.get(taskId);
+      if(!rules&&replay)throw new Error(`Candidate manifest ${manifest.fingerprint.slice(0,16)} is missing task ${taskId}; replay aborted fail-closed.`);
+      if(!rules){rules=unique([...definition.base,...failureRules(context.failureProfile||{},context,definition.mode)]);frozenByTask.set(taskId,rules);persist();}
+      write(cwd,definition.title,rules,info);
+    },
+    manifest:currentManifest,
+    persistAsWinner:()=>{winnerPath=manifestOutputPath();return persist();},
+  };
+}
+
+export function mutationFromCandidateManifest(manifest){
+  const definition=mutationDefinitions.find(x=>x.id===manifest?.mutation?.id);
+  if(!definition)throw new Error(`Unknown mutation in candidate manifest: ${manifest?.mutation?.id||'missing'}`);
+  return instantiate(definition,{manifest});
 }
 
 export const mutationCatalog=mutationDefinitions.map(({id,title})=>({id,title}));
-export function selectMutations(limit=5){return mutationDefinitions.slice(0,Math.max(1,Math.min(mutationDefinitions.length,Number(limit)||5))).map(instantiate);}
+export function selectMutations(limit=5){
+  const replayPath=process.env.KODEMATIK_CANDIDATE_MANIFEST_IN;
+  if(replayPath){const manifest=readCandidateManifest(replayPath,manifestExpected());const mutation=mutationFromCandidateManifest(manifest);console.log(`Candidate replay: ${mutation.id} · sha256=${manifest.fingerprint.slice(0,16)} · tasks=${Object.keys(manifest.tasks).length}`);return[mutation];}
+  return mutationDefinitions.slice(0,Math.max(1,Math.min(mutationDefinitions.length,Number(limit)||5))).map(definition=>instantiate(definition));
+}
 export function rankTournament(entries){return [...entries].sort((a,b)=>b.suite.summary.passRate-a.suite.summary.passRate||b.suite.summary.score-a.suite.summary.score||(a.suite.summary.inputTokens+a.suite.summary.outputTokens)-(b.suite.summary.inputTokens+b.suite.summary.outputTokens)||a.mutation.id.localeCompare(b.mutation.id));}
-export function tournamentWinner(entries){return rankTournament(entries)[0]||null;}
+export function tournamentWinner(entries){const winner=rankTournament(entries)[0]||null;winner?.mutation?.persistAsWinner?.();return winner;}
