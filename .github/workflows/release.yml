@@ -32,18 +32,23 @@ jobs:
           echo "target=$TARGET" >> "$GITHUB_OUTPUT"
 
       - name: Build release notes from changelog
+        id: notes
         shell: bash
         env:
           TAG: ${{ steps.release.outputs.tag }}
         run: |
           set -euo pipefail
           VERSION="${TAG#v}"
+          HEADING="$(grep -m1 "^## v${VERSION} " CHANGELOG.md || true)"
+          [ -n "$HEADING" ] || { echo "No CHANGELOG heading found for $TAG"; exit 2; }
+          TITLE="${HEADING#\#\# }"
           awk -v heading="## v${VERSION} " '
             index($0, heading) == 1 { capture=1; next }
             capture && /^## v[0-9]/ { exit }
             capture { print }
           ' CHANGELOG.md > release-notes.md
           [ -s release-notes.md ] || { echo "No CHANGELOG section found for $TAG"; exit 2; }
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub release
         shell: bash
@@ -51,6 +56,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.release.outputs.tag }}
           TARGET: ${{ steps.release.outputs.target }}
+          TITLE: ${{ steps.notes.outputs.title }}
         run: |
           set -euo pipefail
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
@@ -60,5 +66,5 @@ jobs:
           gh release create "$TAG" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$TARGET" \
-            --title "Kodematik $TAG — Instruction Delivery Integrity" \
+            --title "$TITLE" \
             --notes-file release-notes.md
