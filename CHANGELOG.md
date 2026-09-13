@@ -6,6 +6,43 @@ The repository began as **AgentGym v0.3.0**. There are no v0.1.x or v0.2.x relea
 
 Benchmark notes distinguish **harness/qualification improvements** from **agent-performance evidence**. A successful GitHub Actions run means the workflow completed; it does not by itself prove that an agent improved.
 
+## v0.6.17 — Candidate Replay Integrity — 2026-09-14
+
+### Added
+
+- Versioned candidate replay manifests containing the target repository, locked dataset fingerprint, mutation identity, exact per-task rules, task IDs, and a SHA-256 manifest fingerprint.
+- Fail-closed manifest validation for schema version, target repository, dataset fingerprint, task coverage, and manifest tampering.
+- Exact candidate replay mode so an independently launched tournament can reuse byte-identical candidate guidance instead of regenerating it from a new stochastic baseline profile.
+- Candidate-manifest export in the Real Agent Tournament artifact bundle.
+- Per-task stochastic evidence logging with failed verification checks, changed files, turn-exhaustion state, and shortened instruction fingerprints.
+- A committed axios replay manifest under `benchmarks/axios/candidate-manifests/` for independent confirmation.
+
+### Changed
+
+- Real Agent Tournament can resolve a committed candidate manifest to an absolute path before entering the target repository worktree.
+- Release automation now derives the GitHub Release title from the matching CHANGELOG heading instead of hardcoding the v0.6.16 title.
+
+### Verified replay evidence
+
+Locked Real Agent Tournament #7 (`34766235944`) against `axios/axios` generated a complete `failure-localized` candidate manifest and finished **KEEP**:
+
+- dataset fingerprint: `502f5bf177246c5900e98bc56812d0f731fa9452940d612af6ac2d1be577fa42`;
+- final manifest fingerprint: `c28515fc9b77ec05185c838df92cf54a4ddafef107dcd8a804ab2dceab1d3a28`;
+- training evidence: **2/3 wins**, 0 regressions, average delta **+33 percentage points pass rate / +17 verification points**;
+- held-out evidence: **3/3 wins**, 0 regressions;
+- final decision: **KEEP**.
+
+Independent Tournament #8 (`34773725440`) then replayed that exact committed manifest. Integrity checks passed and the delivered candidate instruction fingerprints matched the generated candidate, but stochastic performance did not meet the acceptance threshold:
+
+- training trial 1: neutral, 0%/50 versus baseline 0%/50;
+- training trial 2: win, 33%/67 versus baseline 0%/50;
+- training trial 3: neutral, 0%/50 versus baseline 0%/50;
+- aggregate: **1/3 wins**, 0 regressions, average delta **+11 percentage points pass rate / +6 verification points**;
+- held-out calls were correctly skipped because training eligibility failed;
+- final decision: **REJECT**.
+
+This result is intentionally not presented as a performance improvement release. v0.6.17 proves that Kodematik can preserve and replay the same candidate treatment across independent tournaments, and it also shows why the fail-closed stochastic gate matters: identical instructions can still produce different outcomes from a non-deterministic coding agent.
+
 ## v0.6.16 — Instruction Delivery Integrity — 2026-09-13
 
 ### Added
