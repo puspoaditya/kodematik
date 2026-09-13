@@ -39,6 +39,10 @@ on:
         description: Maximum tool-call turns per task
         required: true
         default: '8'
+      candidate_manifest_path:
+        description: Optional committed candidate manifest path for exact replay
+        required: false
+        default: ''
   push:
     paths:
       - .github/tournament-trigger
@@ -60,6 +64,8 @@ jobs:
       TRIALS: ${{ inputs.trials || '3' }}
       MODEL: ${{ inputs.model || 'deepseek/deepseek-v4-flash' }}
       MAX_TURNS: ${{ inputs.max_turns || '8' }}
+      KODEMATIK_CANDIDATE_MANIFEST_IN: ${{ inputs.candidate_manifest_path || '' }}
+      KODEMATIK_CANDIDATE_MANIFEST_OUT: ${{ github.workspace }}/kodematik-candidate-manifest.json
       OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
     steps:
@@ -87,6 +93,9 @@ jobs:
           [[ "$MAX_TURNS" =~ ^[1-9][0-9]*$ ]] || { echo 'max_turns must be a positive integer'; exit 2; }
           [[ "$EXPECTED_FINGERPRINT" =~ ^[0-9a-f]{64}$ ]] || { echo 'expected_fingerprint must be a SHA-256 hex string'; exit 2; }
           [ -n "$OPENROUTER_API_KEY" ] || { echo 'Missing repository secret OPENROUTER_API_KEY'; exit 2; }
+          if [ -n "$KODEMATIK_CANDIDATE_MANIFEST_IN" ]; then
+            [ -f "$KODEMATIK_CANDIDATE_MANIFEST_IN" ] || { echo "candidate manifest not found: $KODEMATIK_CANDIDATE_MANIFEST_IN"; exit 2; }
+          fi
 
       - name: Install Kodematik
         run: |
@@ -148,6 +157,8 @@ jobs:
             echo "- Paired trials: $TRIALS"
             echo "- Max turns: $MAX_TURNS"
             echo "- Expected fingerprint preflight: $EXPECTED_FINGERPRINT"
+            echo "- Candidate replay input: ${KODEMATIK_CANDIDATE_MANIFEST_IN:-none}"
+            echo "- Candidate manifest output: $KODEMATIK_CANDIDATE_MANIFEST_OUT"
             echo "- Kodematik commit: $GITHUB_SHA"
             echo
             echo '## Fingerprint preflight'
@@ -169,4 +180,5 @@ jobs:
           path: |
             kodematik-tournament-preflight.txt
             kodematik-tournament.txt
+            kodematik-candidate-manifest.json
           if-no-files-found: warn
